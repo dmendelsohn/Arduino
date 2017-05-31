@@ -9,7 +9,9 @@
 // Constants
 #define MG_VERSION "0.1"
 #define TIMEOUT_MICROS_DEFAULT 
-
+#define LED_PIN 13
+#define REQ_BUFFER_SIZE 64
+#define RESP_BUFFER_SIZE 64
 
 // Byte codes for system events
 #define MG_INIT 0x00
@@ -54,27 +56,29 @@
 class MicroGrader { // Essentially a static class to wrap all communication
     public:
         void begin();
-        bool sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
-        bool sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
+        uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
+        uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
                                 uint8_t *resp, uint8_t resp_len);
 
-        // Pin functions
-        /*void pinMode(uint8_t pin, uint8_t mode);
+        // Pin functions: consider doing macro tricks for these_
+        void pinMode(uint8_t pin, uint8_t mode);
 
         int digitalRead(uint8_t pin);
         void digitalWrite(uint8_t pin, uint8_t val);
 
-        void analogReadRes(uint32_t bits);
+        //void analogReadRes_(uint32_t bits);
         void analogReadResolution(uint32_t bits);
         int analogRead(uint8_t pin);
-        void analogWriteRes(uint32_t bits);
+        //void analogWriteRes_(uint32_t bits);
         void analogWriteResolution(uint32_t bits);
-        void analogWrite(uint8_t pin, int val);*/
+        void analogWrite(uint8_t pin, int val);
 
-        //TODO: more
     private:
         enum ResponseType {NONE, ERR, ACK, DATA};
-        enum ErrorType {TIMEOUT, OTHER};
+        enum ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
+
+        uint8_t req_buffer[REQ_BUFFER_SIZE];
+        uint8_t resp_buffer[RESP_BUFFER_SIZE];
 
         void error(ErrorType error_type);
 
@@ -113,8 +117,7 @@ extern USBSerialDummy SerialDummy; // declaration of SerialDummy instance
 
 #if TEST
     #define Serial SerialDummy  // Replace user Serial with SerialDummy
-#else
-    #define Serial Serial // Allow user to use regular Serial object
+    // Later: more aliases, particularly for GPIO functions
 #endif
 
 #endif // MICROGRADER_H
