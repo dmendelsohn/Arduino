@@ -13,7 +13,7 @@ USBSerialDummy SerialDummy; // definition of dummy Serial instance
 // Begins Serial connection and waits for remote program to begin reading.
 void MicroGrader::begin() {
     Serial.begin(9600);
-    //TODO: wait for Serial connection
+    while (!Serial.dtr()); // Wait for Serial connection
     sendMessage(MG_INIT, nullptr, 0); // Let grader know that connection is made
 }
 
