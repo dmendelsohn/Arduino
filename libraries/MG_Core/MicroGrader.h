@@ -51,7 +51,7 @@
 #include "USBSerialDummy.h"
 #include "MicroGraderPin.h"
 
-enum ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
+enum MG_ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
 
 class MicroGraderCore { // Essentially a static class to wrap all communication
   public:
@@ -59,7 +59,7 @@ class MicroGraderCore { // Essentially a static class to wrap all communication
     uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
     uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
                          uint8_t *resp, uint8_t resp_len);
-    void error(ErrorType error_type);
+    void error(MG_ErrorType error_type);
 
   private:
     enum ResponseType {NONE, ERR, ACK, DATA};

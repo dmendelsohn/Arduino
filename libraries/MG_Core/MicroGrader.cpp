@@ -83,7 +83,7 @@ uint16_t MicroGraderCore::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_l
 // Enter permanent error state with blinking LED.  Frequency of
 //     blink corresponds to different causes of error.
 // Later: more modes of failure (BAD_RESPONSE)
-void MicroGraderCore::error(ErrorType error_type) {
+void MicroGraderCore::error(MG_ErrorType error_type) {
     if (error_type == TIMEOUT) { // fast blink LED forever
         pinMode(LED_PIN, OUTPUT);
         while (true) {
