@@ -2,23 +2,20 @@
 #include <Arduino.h>
 #include "MicroGrader.h"
 
-USBSerialDummy SerialDummy; // definition of dummy Serial instance
-
-//// INITIALIZE STATIC VARIABLES
-
+MicroGraderCore MicroGrader; // definition of MicroGraderCore instance
 
 //// PUBLIC FUNCTIONS
 
 // Should be called at the very beginning of setup().
 // Begins Serial connection and waits for remote program to begin reading.
-void MicroGrader::begin() {
+void MicroGraderCore::begin() {
     Serial.begin(9600);
     while (!Serial.dtr()); // Wait for Serial connection
     sendMessage(MG_INIT, nullptr, 0); // Let grader know that connection is made
 }
 
 // No response expected (just ACK)
-uint16_t MicroGrader::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len) {
+uint16_t MicroGraderCore::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len) {
     return sendMessage(code, msg, msg_len, nullptr, 0);
 }
 
@@ -26,10 +23,10 @@ uint16_t MicroGrader::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len) 
 // Waits for, and processes, response.  If the response is a DATA response,
 // that data is loaded into resp.
 // If the response is ERR or there's a timeout, enter error state permanently.
-// Returns: the total number of bytes received in response (including header)
+// Returns: the # of bytes received in response (not including header)
 //Later: allow for larger responses (up to 65536)
 //Later: make timeout dynamic based on msg_len
-uint16_t MicroGrader::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len,
+uint16_t MicroGraderCore::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len,
                                   uint8_t *resp, uint8_t resp_len) {
     // Later: perhaps helpful for robustness: empty Serial RX
     Serial.write(code);
@@ -78,57 +75,7 @@ uint16_t MicroGrader::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len,
         error(OTHER);
     }
 
-    return received_bytes;
-}
-
-// The functions below are substitutes for GPIO functions
-void MicroGrader::pinMode(uint8_t pin, uint8_t mode) {
-    req_buffer[0] = pin;
-    req_buffer[1] = mode;
-    sendMessage(MG_PIN_MODE, req_buffer, 2);
-}
-
-int MicroGrader::digitalRead(uint8_t pin) {
-    req_buffer[0] = pin;
-    int received_bytes = sendMessage(MG_DIGITAL_READ, req_buffer, 1, 
-                                     resp_buffer, RESP_BUFFER_SIZE);
-    if (received_bytes < 1) {
-        error(BAD_RESPONSE);  // Hang forever, something is broken
-    } 
-    return resp_buffer[0];
-}
-
-void MicroGrader::digitalWrite(uint8_t pin, uint8_t val) {
-    req_buffer[0] = pin;
-    req_buffer[1] = val;
-    sendMessage(MG_DIGITAL_WRITE, req_buffer, 2);
-}
-
-
-void MicroGrader::analogReadResolution(uint32_t bits) {
-    *((uint32_t *)req_buffer) = bits;
-    sendMessage(MG_READ_RES, req_buffer, sizeof(bits));
-}
-
-int MicroGrader::analogRead(uint8_t pin) {
-    req_buffer[0] = pin;
-    int received_bytes = sendMessage(MG_ANALOG_READ, req_buffer, 1, 
-                                     resp_buffer, RESP_BUFFER_SIZE);
-    if (received_bytes < 4) {
-        error(BAD_RESPONSE);
-    }
-    return *((int *)(resp_buffer)); // Return first four bytes as int
-}
-
-void MicroGrader::analogWriteResolution(uint32_t bits) {
-    *((uint32_t *)req_buffer) = bits;
-    sendMessage(MG_WRITE_RES, req_buffer, sizeof(bits));
-}
-
-void MicroGrader::analogWrite(uint8_t pin, int val) {
-    req_buffer[0] = pin;
-    *((int *)(req_buffer + 1)) = val;
-    sendMessage(MG_ANALOG_WRITE, req_buffer, 1+sizeof(val));
+    return expected_data_bytes;
 }
 
 //// PRIVATE FUNCTIONS
@@ -136,7 +83,7 @@ void MicroGrader::analogWrite(uint8_t pin, int val) {
 // Enter permanent error state with blinking LED.  Frequency of
 //     blink corresponds to different causes of error.
 // Later: more modes of failure (BAD_RESPONSE)
-void MicroGrader::error(ErrorType error_type) {
+void MicroGraderCore::error(ErrorType error_type) {
     if (error_type == TIMEOUT) { // fast blink LED forever
         pinMode(LED_PIN, OUTPUT);
         while (true) {
@@ -155,5 +102,3 @@ void MicroGrader::error(ErrorType error_type) {
         }
     }
 }
-
-

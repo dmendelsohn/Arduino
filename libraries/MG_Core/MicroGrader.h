@@ -8,10 +8,7 @@
 
 // Constants
 #define MG_VERSION "0.1"
-#define TIMEOUT_MICROS_DEFAULT 
 #define LED_PIN 13
-#define REQ_BUFFER_SIZE 64
-#define RESP_BUFFER_SIZE 64
 
 // Byte codes for system events
 #define MG_INIT 0x00
@@ -51,69 +48,25 @@
 
 #include <WString.h>
 #include <Arduino.h>
-#include "Stream.h"
+#include "USBSerialDummy.h"
+#include "MicroGraderPin.h"
 
-class MicroGrader { // Essentially a static class to wrap all communication
-    public:
-        void begin();
-        uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
-        uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
-                                uint8_t *resp, uint8_t resp_len);
+enum ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
 
-        // Pin functions: consider doing macro tricks for these_
-        void pinMode(uint8_t pin, uint8_t mode);
-
-        int digitalRead(uint8_t pin);
-        void digitalWrite(uint8_t pin, uint8_t val);
-
-        //void analogReadRes_(uint32_t bits);
-        void analogReadResolution(uint32_t bits);
-        int analogRead(uint8_t pin);
-        //void analogWriteRes_(uint32_t bits);
-        void analogWriteResolution(uint32_t bits);
-        void analogWrite(uint8_t pin, int val);
-
-    private:
-        enum ResponseType {NONE, ERR, ACK, DATA};
-        enum ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
-
-        uint8_t req_buffer[REQ_BUFFER_SIZE];
-        uint8_t resp_buffer[RESP_BUFFER_SIZE];
-
-        void error(ErrorType error_type);
-
-};
-
-// Dummy serial class; in TEST mode, uses of Serial will still compile, but
-// will point to this dummy class instead.  We need exclusive control of
-// USB serial for MicroGrader
-class USBSerialDummy : public Stream
-{
+class MicroGraderCore { // Essentially a static class to wrap all communication
   public:
-    void begin(long) { };
-    void end() { };
-    virtual int available() { return 0; }
-    virtual int read() { return -1; }
-    virtual int peek() { return -1; }
-    virtual void flush() { }
-    virtual size_t write(uint8_t c) { return 1; }
-    virtual size_t write(const uint8_t *buffer, size_t size) { return size; }
-    size_t write(unsigned long n) { return 1; }
-    size_t write(long n) { return 1; }
-    size_t write(unsigned int n) { return 1; }
-    size_t write(int n) { return 1; }
-    int availableForWrite() { return 0; }
-    using Print::write;
-    void send_now(void) { }
-    uint32_t baud(void) { return 0; }
-    uint8_t stopbits(void) { return 1; }
-    uint8_t paritytype(void) { return 0; }
-    uint8_t numbits(void) { return 8; }
-    uint8_t dtr(void) { return 1; }
-    uint8_t rts(void) { return 1; }
-    operator bool() { return true; }
+    void begin();
+    uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
+    uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
+                         uint8_t *resp, uint8_t resp_len);
+    void error(ErrorType error_type);
+
+  private:
+    enum ResponseType {NONE, ERR, ACK, DATA};
+
 };
-extern USBSerialDummy SerialDummy; // declaration of SerialDummy instance
+extern MicroGraderCore MicroGrader; // declaration of MicroGraderCore instance
+
 
 #if TEST
     #define Serial SerialDummy  // Replace user Serial with SerialDummy
