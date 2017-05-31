@@ -25,4 +25,20 @@ class MicroGraderPin {
 };
 extern MicroGraderPin PinWrapper; // declaration of MicroGraderPin instance
 
+#if TEST
+
+#define pinMode PinWrapper.pinMode
+
+#define digitalRead PinWrapper.digitalRead
+#define digitalWrite PinWrapper.digitalWrite
+
+#define analogReadResolution PinWrapper.analogReadResolution
+#define analogReadRes PinWrapper.analogReadResolution
+#define analogRead PinWrapper.analogRead
+#define analogWriteResolution PinWrapper.analogWriteResolution
+#define analogWriteRes PinWrapper.analogWriteResolution
+#define analogWrite PinWrapper.analogWrite
+
+#endif // TEST
+
 #endif

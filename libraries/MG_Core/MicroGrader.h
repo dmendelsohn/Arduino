@@ -70,7 +70,6 @@ extern MicroGraderCore MicroGrader; // declaration of MicroGraderCore instance
 
 #if TEST
     #define Serial SerialDummy  // Replace user Serial with SerialDummy
-    // Later: more aliases, particularly for GPIO functions
 #endif
 
 #endif // MICROGRADER_H
