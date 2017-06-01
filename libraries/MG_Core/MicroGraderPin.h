@@ -4,40 +4,48 @@
 #define REQ_BUFFER_SIZE 4
 #define RESP_BUFFER_SIZE 4
 
+#define ANALOG_READ_RES_DEFAULT 10
+#define ANALOG_WRITE_RES_DEFAULT 8
+
 class MicroGraderPin {
   public:
+    MicroGraderPin();
 
-    void pinMode(uint8_t pin, uint8_t mode);
+    void pinMode_(uint8_t pin, uint8_t mode);
 
-    int digitalRead(uint8_t pin);
-    void digitalWrite(uint8_t pin, uint8_t val);
+    int digitalRead_(uint8_t pin);
+    void digitalWrite_(uint8_t pin, uint8_t val);
 
-    void analogReadResolution(uint32_t bits);
-    int analogRead(uint8_t pin);
-    void analogWriteResolution(uint32_t bits);
-    void analogWrite(uint8_t pin, int val);
+    void analogReadResolution_(uint32_t bits);
+    int analogRead_(uint8_t pin);
+    void analogWriteResolution_(uint32_t bits);
+    void analogWrite_(uint8_t pin, int val);
 
   private:
 
     uint8_t req_buffer[REQ_BUFFER_SIZE];
     uint8_t resp_buffer[RESP_BUFFER_SIZE];
+    uint32_t analog_read_res;
+    uint32_t analog_write_res;
+
+    //TODO: add RW analog resolution variables
 
 };
 extern MicroGraderPin PinWrapper; // declaration of MicroGraderPin instance
 
 #if TEST
 
-#define pinMode PinWrapper.pinMode
+#define pinMode PinWrapper.pinMode_
 
-#define digitalRead PinWrapper.digitalRead
-#define digitalWrite PinWrapper.digitalWrite
+#define digitalRead PinWrapper.digitalRead_
+#define digitalWrite PinWrapper.digitalWrite_
 
-#define analogReadResolution PinWrapper.analogReadResolution
-#define analogReadRes PinWrapper.analogReadResolution
-#define analogRead PinWrapper.analogRead
-#define analogWriteResolution PinWrapper.analogWriteResolution
-#define analogWriteRes PinWrapper.analogWriteResolution
-#define analogWrite PinWrapper.analogWrite
+#define analogReadResolution PinWrapper.analogReadResolution_
+#define analogReadRes PinWrapper.analogReadResolution_
+#define analogRead PinWrapper.analogRead_
+#define analogWriteResolution PinWrapper.analogWriteResolution_
+#define analogWriteRes PinWrapper.analogWriteResolution_
+#define analogWrite PinWrapper.analogWrite_
 
 #endif // TEST
 

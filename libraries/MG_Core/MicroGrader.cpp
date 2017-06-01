@@ -3,6 +3,9 @@
 #include "MicroGrader.h"
 
 MicroGraderCore MicroGrader; // definition of MicroGraderCore instance
+const uint32_t MicroGraderCore::HI_MILLIS[] = {100, 500, 2000};
+const uint32_t MicroGraderCore::LO_MILLIS[] = {100, 500, 2000};
+
 
 //// PUBLIC FUNCTIONS
 
@@ -15,90 +18,84 @@ void MicroGraderCore::begin() {
 }
 
 // No response expected (just ACK)
-uint16_t MicroGraderCore::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len) {
+uint16_t MicroGraderCore::sendMessage(code_t code, uint8_t *msg, msg_size_t msg_len) {
     return sendMessage(code, msg, msg_len, nullptr, 0);
 }
 
-// Sends the code, followed by a uint32_t timestamp in millis, followed by msg.
-// Waits for, and processes, response.  If the response is a DATA response,
-// that data is loaded into resp.
+// Sends the message header followed by message body.
+// Waits for, and processes, response.  Loads the response body into resp
 // If the response is ERR or there's a timeout, enter error state permanently.
-// Returns: the # of bytes received in response (not including header)
-//Later: allow for larger responses (up to 65536)
-//Later: make timeout dynamic based on msg_len
-uint16_t MicroGraderCore::sendMessage(uint8_t code, uint8_t *msg, uint16_t msg_len,
-                                  uint8_t *resp, uint8_t resp_len) {
+// Returns: the number of bytes received in response body
+uint16_t MicroGraderCore::sendMessage(code_t code, uint8_t *msg, msg_size_t msg_len,
+                                      uint8_t *resp, msg_size_t resp_len) {
     // Later: perhaps helpful for robustness: empty Serial RX
-    Serial.write(code);
-    uint32_t timestamp = millis();
+
+    // First, send the header (code, timestamp, body_size)
+    timestamp_t timestamp = millis();
+    Serial.write((uint8_t *)(&code), sizeof(code));
     Serial.write((uint8_t *)(&timestamp), sizeof(timestamp));
+    Serial.write((uint8_t *)(&msg_len), sizeof(msg_len));
+
+    // Next, send the body
     Serial.write(msg, msg_len);
     Serial.send_now();
+
+    // Wait for and process response
     elapsedMicros t = 0;
     bool has_response = false;
-    uint16_t received_bytes = 0; // num characters received in response
-    uint8_t expected_data_bytes = 0; // num data chars expected in response
-    ResponseType response_type = ERR; // No response received yet
-    uint32_t timeout = 10000;
+    msg_size_t received_bytes = 0; // includes header
+    msg_size_t expected_body_bytes = 0;
+    code_t resp_code = MG_ERR; // Assume error at first
+    uint32_t timeout = 10000; // Later: make this dynamic based on msg_len
+
     while (!has_response && t < timeout) {
         if (Serial.available()) { // Check if a character is available
             uint8_t val = Serial.read();
-            if (received_bytes == 0) { // Process first char, "code"
-                if (val == MG_ACK) {
-                    response_type = ACK;
-                    has_response = true;
-                } else if (val == MG_DATA) {
-                    response_type = DATA;
-                } else {
-                    response_type = ERR;
-                    has_response = true;
-                }
-            } else if (received_bytes == 1) { // Process second char, "size"
-                expected_data_bytes = val;
-            } else { // Process array of data
-                uint8_t index = received_bytes - 2;
+            if (received_bytes < RESP_HEADER_SIZE) {
+                header_buffer[received_bytes] = val;
+            } else {
+                msg_size_t index = received_bytes - RESP_HEADER_SIZE;
                 if (index < resp_len) { // Check for overflow
                     resp[index] = val; // Insert new value into response buffer
                 }
                 // For now, silently drop characters beyond allowed resp_len
             }
             received_bytes++;
-            if (received_bytes == expected_data_bytes+2) {  // End of expected message
+
+            // If header is completely received, process it
+            if (received_bytes == RESP_HEADER_SIZE) {
+                uint8_t *ptr = header_buffer; // Get pointer to beginning of array
+                resp_code = *((code_t *)ptr);
+                ptr += sizeof(code_t); // Increment to next part of header
+                expected_body_bytes = *((msg_size_t *)ptr);
+            }
+
+            // Check if message is done
+            if (received_bytes == expected_body_bytes+RESP_HEADER_SIZE) {
                     has_response = true;
             }
         }
     }
 
     if (t > timeout) {
-        error(TIMEOUT);
-    } else if (response_type == ERR) {
-        error(OTHER);
+        error(TIMEOUT_ERROR);
+    } else if (resp_code != MG_ACK) {
+        error(RESP_ERROR);
     }
 
-    return expected_data_bytes;
+    return expected_body_bytes;
 }
 
 //// PRIVATE FUNCTIONS
 
 // Enter permanent error state with blinking LED.  Frequency of
 //     blink corresponds to different causes of error.
-// Later: more modes of failure (BAD_RESPONSE)
 void MicroGraderCore::error(MG_ErrorType error_type) {
-    if (error_type == TIMEOUT) { // fast blink LED forever
-        pinMode(LED_PIN, OUTPUT);
-        while (true) {
-            digitalWrite(LED_PIN, HIGH);
-            delay(100);
-            digitalWrite(LED_PIN, LOW);
-            delay(100);
-        }
-    } else { // slow blink LED forever
-        pinMode(LED_PIN, OUTPUT);
-        while (true) {
-            digitalWrite(LED_PIN, HIGH);
-            delay(1000);
-            digitalWrite(LED_PIN, LOW);
-            delay(1000);
-        }
-    }
+    pinMode(LED_PIN, OUTPUT);
+    while (true) {
+        digitalWrite(LED_PIN, HIGH);
+        delay(HI_MILLIS[error_type]);
+        digitalWrite(LED_PIN, LOW);
+        delay(LO_MILLIS[error_type]);
+    }       
 }

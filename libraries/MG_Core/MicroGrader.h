@@ -43,7 +43,6 @@
 // Byte codes for responses
 #define MG_ACK 0x80
 #define MG_ERR 0x081
-#define MG_DATA 0x82
 
 
 #include <WString.h>
@@ -51,18 +50,28 @@
 #include "USBSerialDummy.h"
 #include "MicroGraderPin.h"
 
-enum MG_ErrorType {TIMEOUT, BAD_RESPONSE, OTHER};
+typedef uint8_t code_t;
+typedef uint32_t timestamp_t;
+typedef uint16_t msg_size_t;
+
+#define REQ_HEADER_SIZE (sizeof(code_t)+sizeof(timestamp_t)+sizeof(msg_size_t))
+#define RESP_HEADER_SIZE (sizeof(code_t)+sizeof(msg_size_t))
+
+enum MG_ErrorType {TIMEOUT_ERROR=0, RESP_ERROR=1, DATA_ERROR=2};
 
 class MicroGraderCore { // Essentially a static class to wrap all communication
   public:
     void begin();
-    uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len);
-    uint16_t sendMessage(uint8_t code, uint8_t *data, uint16_t data_len,
-                         uint8_t *resp, uint8_t resp_len);
+    uint16_t sendMessage(code_t code, uint8_t *data, msg_size_t data_len);
+    uint16_t sendMessage(code_t code, uint8_t *data, msg_size_t data_len,
+                         uint8_t *resp, msg_size_t resp_len);
     void error(MG_ErrorType error_type);
 
   private:
-    enum ResponseType {NONE, ERR, ACK, DATA};
+    uint8_t header_buffer[RESP_HEADER_SIZE];
+
+    static uint32_t const HI_MILLIS[]; // blink times for error processing
+    static uint32_t const LO_MILLIS[]; // blink times for error processing
 
 };
 extern MicroGraderCore MicroGrader; // declaration of MicroGraderCore instance
