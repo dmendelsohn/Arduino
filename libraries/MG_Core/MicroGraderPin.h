@@ -1,9 +1,6 @@
 #ifndef MICROGRADER_PIN_H
 #define MICROGRADER_PIN_H
 
-#define REQ_BUFFER_SIZE 4
-#define RESP_BUFFER_SIZE 4
-
 #define ANALOG_READ_RES_DEFAULT 10
 #define ANALOG_WRITE_RES_DEFAULT 8
 
@@ -23,8 +20,8 @@ class MicroGraderPin {
 
   private:
 
-    uint8_t req_buffer[REQ_BUFFER_SIZE];
-    uint8_t resp_buffer[RESP_BUFFER_SIZE];
+    uint8_t req_buffer[1+5*sizeof(int32_t)];
+    uint8_t resp_buffer[sizeof(int32_t)];
     uint32_t analog_read_res;
     uint32_t analog_write_res;
 

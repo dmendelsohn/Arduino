@@ -19,7 +19,7 @@ void MicroGraderPin::pinMode_(uint8_t pin, uint8_t mode) {
 int MicroGraderPin::digitalRead_(uint8_t pin) {
     req_buffer[0] = pin;
     int data_bytes = MicroGrader.sendMessage(MG_DIGITAL_READ, req_buffer, 1,
-                                             resp_buffer, RESP_BUFFER_SIZE);
+                                             resp_buffer, 1);
     if (data_bytes < 1) {
         MicroGrader.error(DATA_ERROR); // Hang forever, something broke
     } 
@@ -39,10 +39,15 @@ void MicroGraderPin::analogReadResolution_(uint32_t bits) {
 }
 
 int MicroGraderPin::analogRead_(uint8_t pin) {
+    int32_t max_bin = pow(2,analog_read_res) - 1;
     req_buffer[0] = pin;
-    req_buffer[1] = (uint8_t)analog_write_res;
-    int data_bytes = MicroGrader.sendMessage(MG_ANALOG_READ, req_buffer, 2, 
-                                             resp_buffer, RESP_BUFFER_SIZE);
+    *((int32_t *)(req_buffer + 1 + 0*sizeof(int32_t))) = 0; // Min is 0V
+    *((int32_t *)(req_buffer + 1 + 1*sizeof(int32_t))) = 3300; // Max is 3.3V
+    *((int32_t *)(req_buffer + 1 + 2*sizeof(int32_t))) = 0; // Min bin is 0
+    *((int32_t *)(req_buffer + 1 + 3*sizeof(int32_t))) = max_bin;
+    int data_bytes = MicroGrader.sendMessage(MG_ANALOG_READ, 
+                                             req_buffer, 1+4*sizeof(int32_t),
+                                             resp_buffer, sizeof(int32_t));
     if (data_bytes < 4) {
         MicroGrader.error(DATA_ERROR); // Hang forever, something broke
     } 
@@ -56,8 +61,13 @@ void MicroGraderPin::analogWriteResolution_(uint32_t bits) {
 
 void MicroGraderPin::analogWrite_(uint8_t pin, int val) {
     analogWrite(pin, val); // Do actual write
+    int32_t max_bin = pow(2,analog_write_res) - 1;
     req_buffer[0] = pin;
-    req_buffer[1] = (uint8_t)analog_write_res;
-    *((int *)(req_buffer + 1)) = val;
-    MicroGrader.sendMessage(MG_ANALOG_WRITE, req_buffer, 2+sizeof(val));
+    *((int32_t *)(req_buffer + 1 + 0*sizeof(int32_t))) = 0; // Min is 0V
+    *((int32_t *)(req_buffer + 1 + 1*sizeof(int32_t))) = 3300; // Max is 3.3V
+    *((int32_t *)(req_buffer + 1 + 2*sizeof(int32_t))) = 0; // Min bin is 0
+    *((int32_t *)(req_buffer + 1 + 3*sizeof(int32_t))) = max_bin;
+    *((int32_t *)(req_buffer + 1 + 4*sizeof(int32_t))) = val;
+    MicroGrader.sendMessage(MG_ANALOG_WRITE, 
+                            req_buffer, 1+5*sizeof(int32_t));
 }

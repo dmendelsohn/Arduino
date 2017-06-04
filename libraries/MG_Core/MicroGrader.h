@@ -12,6 +12,7 @@
 
 // Byte codes for system events
 #define MG_INIT 0x00
+#define MG_PRINT 0x01
 
 // Byte codes for GPIO events
 #define MG_PIN_MODE 0x20
@@ -29,7 +30,8 @@
 #define MG_IMU_TEMP 0x33
 
 // Byte codes for OLED events
-#define MG_OLED_BUFFER 0x40
+#define MG_OLED_INIT 0x40
+#define MG_OLED_FULL 0x41
 
 // Byte codes for GPS events
 #define MG_GPS_FIX 0x50
@@ -66,6 +68,7 @@ class MicroGraderCore { // Essentially a static class to wrap all communication
     uint16_t sendMessage(code_t code, uint8_t *data, msg_size_t data_len,
                          uint8_t *resp, msg_size_t resp_len);
     void error(MG_ErrorType error_type);
+    void debug(String str);
 
   private:
     uint8_t header_buffer[RESP_HEADER_SIZE];

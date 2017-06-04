@@ -14,6 +14,9 @@ const uint32_t MicroGraderCore::LO_MILLIS[] = {100, 500, 2000};
 void MicroGraderCore::begin() {
     Serial.begin(9600);
     while (!Serial.dtr()); // Wait for Serial connection
+    pinMode(LED_PIN, OUTPUT);
+    digitalWrite(LED_PIN, HIGH); // So we can visually see when connection has been made
+    delay(10); // Small delay is necessary, not sure why
     sendMessage(MG_INIT, nullptr, 0); // Let grader know that connection is made
 }
 
@@ -86,8 +89,6 @@ uint16_t MicroGraderCore::sendMessage(code_t code, uint8_t *msg, msg_size_t msg_
     return expected_body_bytes;
 }
 
-//// PRIVATE FUNCTIONS
-
 // Enter permanent error state with blinking LED.  Frequency of
 //     blink corresponds to different causes of error.
 void MicroGraderCore::error(MG_ErrorType error_type) {
@@ -98,4 +99,9 @@ void MicroGraderCore::error(MG_ErrorType error_type) {
         digitalWrite(LED_PIN, LOW);
         delay(LO_MILLIS[error_type]);
     }       
+}
+
+//Send a debug statement to the host
+void MicroGraderCore::debug(String str) {
+    sendMessage(MG_PRINT, (uint8_t *)str.c_str(), str.length());
 }

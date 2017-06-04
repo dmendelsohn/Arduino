@@ -267,6 +267,10 @@ public:
     // Stores the 16-bit signed accelerometer sensor output
     int16_t accelCount[3];
 
+    // For MicroGrader extensions
+    int32_t req_buffer[4];
+    int32_t resp_buffer[3];
+
     // Public method declarations
     MPU9250(int8_t csPin=NOT_SPI);
     void getMres();
